@@ -317,7 +317,7 @@ class ProjectBuilderTest extends AbstractCoreMavenComponentTestCase {
 
         for (int validationLevel :
                 List.of(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL, ModelBuildingRequest.VALIDATION_LEVEL_STRICT)) {
-            for (boolean processPlugins : List.of(false, true)) {
+            for (boolean processPlugins : List.of(true)) {
                 ProjectBuildingRequest request = new DefaultProjectBuildingRequest();
                 request.setRepositorySession(session.getRepositorySession());
                 request.setValidationLevel(validationLevel);

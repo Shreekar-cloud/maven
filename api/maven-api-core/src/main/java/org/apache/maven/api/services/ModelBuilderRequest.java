@@ -69,7 +69,14 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
         /**
          * The request is for building a model from a dependency POM file from a downloaded artifact.
          */
-        CONSUMER_DEPENDENCY
+        CONSUMER_DEPENDENCY,
+        /**
+         * The request is for loading a project from a POM file on the filesystem when build-time strictness is not
+         * wanted, for example by IDEs. The model gets the same project treatment as {@link #BUILD_EFFECTIVE}, such as
+         * local parent lookup and profile activation, but it is parsed leniently and validated at the minimal level,
+         * like for the consumer request types.
+         */
+        LOAD_PROJECT
     }
 
     /**
@@ -93,16 +100,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
 
     @Nonnull
     RequestType getRequestType();
-
-    /**
-     * Returns the explicit validation level to apply, or {@code null} to use the default
-     * level based on the {@linkplain #getRequestType() request type}.
-     *
-     * @return the validation level, or {@code null}
-     * @see org.apache.maven.api.services.model.ModelValidator
-     */
-    @Nullable
-    Integer getValidationLevel();
 
     boolean isLocationTracking();
 
@@ -184,7 +181,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
         Session session;
         RequestTrace trace;
         RequestType requestType;
-        Integer validationLevel;
         boolean locationTracking;
         boolean recursive;
         ModelSource source;
@@ -203,7 +199,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
             this.session = request.getSession();
             this.trace = request.getTrace();
             this.requestType = request.getRequestType();
-            this.validationLevel = request.getValidationLevel();
             this.locationTracking = request.isLocationTracking();
             this.recursive = request.isRecursive();
             this.source = request.getSource();
@@ -229,11 +224,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
 
         public ModelBuilderRequestBuilder requestType(RequestType requestType) {
             this.requestType = requestType;
-            return this;
-        }
-
-        public ModelBuilderRequestBuilder validationLevel(Integer validationLevel) {
-            this.validationLevel = validationLevel;
             return this;
         }
 
@@ -297,7 +287,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
                     session,
                     trace,
                     requestType,
-                    validationLevel,
                     locationTracking,
                     recursive,
                     source,
@@ -313,7 +302,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
 
         private static class DefaultModelBuilderRequest extends BaseRequest<Session> implements ModelBuilderRequest {
             private final RequestType requestType;
-            private final Integer validationLevel;
             private final boolean locationTracking;
             private final boolean recursive;
             private final ModelSource source;
@@ -331,7 +319,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
                     @Nonnull Session session,
                     @Nullable RequestTrace trace,
                     @Nonnull RequestType requestType,
-                    @Nullable Integer validationLevel,
                     boolean locationTracking,
                     boolean recursive,
                     @Nonnull ModelSource source,
@@ -345,7 +332,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
                     ModelTransformer lifecycleBindingsInjector) {
                 super(session, trace);
                 this.requestType = requireNonNull(requestType, "requestType cannot be null");
-                this.validationLevel = validationLevel;
                 this.locationTracking = locationTracking;
                 this.recursive = recursive;
                 this.source = source;
@@ -363,11 +349,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
             @Override
             public RequestType getRequestType() {
                 return requestType;
-            }
-
-            @Override
-            public Integer getValidationLevel() {
-                return validationLevel;
             }
 
             @Override
@@ -432,7 +413,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
                         && locationTracking == that.locationTracking
                         && recursive == that.recursive
                         && requestType == that.requestType
-                        && Objects.equals(validationLevel, that.validationLevel)
                         && Objects.equals(source, that.source)
                         && Objects.equals(profiles, that.profiles)
                         && Objects.equals(activeProfileIds, that.activeProfileIds)
@@ -448,7 +428,6 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
             public int hashCode() {
                 return Objects.hash(
                         requestType,
-                        validationLevel,
                         locationTracking,
                         recursive,
                         source,
@@ -465,8 +444,7 @@ public interface ModelBuilderRequest extends RepositoryAwareRequest {
             @Override
             public String toString() {
                 return "ModelBuilderRequest[" + "requestType="
-                        + requestType + ", validationLevel="
-                        + validationLevel + ", locationTracking="
+                        + requestType + ", locationTracking="
                         + locationTracking + ", recursive="
                         + recursive + ", source="
                         + source + ", profiles="
